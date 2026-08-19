@@ -96,6 +96,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appMenuItem.submenu = appMenu
         mainMenu.addItem(appMenuItem)
 
+        let fileMenuItem = NSMenuItem()
+        let fileMenu = NSMenu(title: "Fichier")
+        let closeItem = NSMenuItem(title: "Fermer", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        closeItem.keyEquivalentModifierMask = .command
+        fileMenu.addItem(closeItem)
+        fileMenuItem.submenu = fileMenu
+        mainMenu.addItem(fileMenuItem)
+
         let viewMenuItem = NSMenuItem()
         let viewMenu = NSMenu(title: "Présentation")
         viewMenu.addItem(withTitle: "Zoom avant", action: #selector(WKWebView.zoomIn(_:)), keyEquivalent: "+")
