@@ -2,6 +2,20 @@ import Cocoa
 import WebKit
 import Darwin
 
+extension WKWebView {
+    @objc func zoomIn(_ sender: Any?) {
+        pageZoom = min(pageZoom + 0.1, 3.0)
+    }
+
+    @objc func zoomOut(_ sender: Any?) {
+        pageZoom = max(pageZoom - 0.1, 0.3)
+    }
+
+    @objc func actualSize(_ sender: Any?) {
+        pageZoom = 1.0
+    }
+}
+
 final class MarkdownWindowController: NSWindowController, NSWindowDelegate {
     private let webView: WKWebView
     private var fileURL: URL?
@@ -70,6 +84,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+        buildMainMenu()
+    }
+
+    private func buildMainMenu() {
+        let mainMenu = NSMenu()
+
+        let appMenuItem = NSMenuItem()
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "Quitter Markdown Viewer", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenuItem.submenu = appMenu
+        mainMenu.addItem(appMenuItem)
+
+        let viewMenuItem = NSMenuItem()
+        let viewMenu = NSMenu(title: "Présentation")
+        viewMenu.addItem(withTitle: "Zoom avant", action: #selector(WKWebView.zoomIn(_:)), keyEquivalent: "+")
+        viewMenu.addItem(withTitle: "Zoom arrière", action: #selector(WKWebView.zoomOut(_:)), keyEquivalent: "-")
+        viewMenu.addItem(withTitle: "Taille réelle", action: #selector(WKWebView.actualSize(_:)), keyEquivalent: "0")
+        viewMenuItem.submenu = viewMenu
+        mainMenu.addItem(viewMenuItem)
+
+        NSApp.mainMenu = mainMenu
     }
 
     /// Called by AppKit when launched via Finder double-click, `open -a`
