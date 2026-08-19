@@ -16,6 +16,10 @@ extension WKWebView {
     }
 }
 
+final class DragRegionView: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+}
+
 final class MarkdownWindowController: NSWindowController, NSWindowDelegate {
     private let webView: WKWebView
     private var fileURL: URL?
@@ -33,13 +37,24 @@ final class MarkdownWindowController: NSWindowController, NSWindowDelegate {
         window.titlebarAppearsTransparent = true
         window.title = "Markdown Viewer"
         window.center()
-        window.contentView = webView
+        window.isMovableByWindowBackground = true
+
+        let container = NSView(frame: window.contentRect(forFrameRect: window.frame))
+        webView.frame = container.bounds
+        webView.autoresizingMask = [.width, .height]
+        container.addSubview(webView)
+
+        let dragRegion = DragRegionView(frame: NSRect(x: 0, y: container.bounds.height - 28, width: container.bounds.width, height: 28))
+        dragRegion.autoresizingMask = [.width, .minYMargin]
+        container.addSubview(dragRegion)
+
+        window.contentView = container
         window.appearance = NSAppearance(named: .darkAqua)
-        self.init(window: window)
+        self.init(window: window, webView: webView)
     }
 
-    private override init(window: NSWindow?) {
-        self.webView = window?.contentView as! WKWebView
+    private init(window: NSWindow?, webView: WKWebView) {
+        self.webView = webView
         super.init(window: window)
         window?.delegate = self
     }
