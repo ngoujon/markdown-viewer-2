@@ -22,7 +22,6 @@ final class MarkdownWindowController: NSWindowController, NSWindowDelegate {
         window.contentView = webView
         window.appearance = NSAppearance(named: .darkAqua)
         self.init(window: window)
-        self.webView.removeFromSuperview()
     }
 
     private override init(window: NSWindow?) {
