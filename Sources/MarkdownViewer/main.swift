@@ -17,6 +17,40 @@ extension WKWebView {
     }
 }
 
+/// Sends clicked links to Google Chrome (falling back to the system default
+/// browser when Chrome is not installed).
+enum ExternalLinkOpener {
+    private static let chromeBundleIDs = [
+        "com.google.Chrome",
+        "com.google.Chrome.beta",
+        "com.google.Chrome.dev",
+        "com.google.Chrome.canary",
+    ]
+
+    private static var chromeURL: URL? {
+        for id in chromeBundleIDs {
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    static func open(_ url: URL) {
+        guard let chrome = chromeURL else {
+            NSWorkspace.shared.open(url)
+            return
+        }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.open([url], withApplicationAt: chrome, configuration: configuration) { _, error in
+            if error != nil {
+                DispatchQueue.main.async { NSWorkspace.shared.open(url) }
+            }
+        }
+    }
+}
+
 /// Content-area backdrop: dragging anywhere on it moves the window, which
 /// complements the standard title bar.
 final class DragRegionView: NSView {
@@ -27,7 +61,7 @@ final class DragRegionView: NSView {
     }
 }
 
-final class MarkdownWindowController: NSWindowController, NSWindowDelegate {
+final class MarkdownWindowController: NSWindowController, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate {
     private let webView: WKWebView
     private(set) var fileURL: URL?
     private var fileMonitor: DispatchSourceFileSystemObject?
@@ -72,6 +106,8 @@ final class MarkdownWindowController: NSWindowController, NSWindowDelegate {
         self.webView = webView
         super.init(window: window)
         window?.delegate = self
+        webView.navigationDelegate = self
+        webView.uiDelegate = self
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -114,6 +150,55 @@ final class MarkdownWindowController: NSWindowController, NSWindowDelegate {
         source.setCancelHandler { Darwin.close(fd) }
         source.resume()
         fileMonitor = source
+    }
+
+    // MARK: - Links
+
+    /// Anything the user clicks leaves the viewer: web links go to Chrome,
+    /// while local Markdown files open in a new viewer window. Only the
+    /// document we load ourselves and in-page anchors stay put.
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard navigationAction.navigationType == .linkActivated,
+              let url = navigationAction.request.url else {
+            decisionHandler(.allow)
+            return
+        }
+        // In-page anchors (#section) must keep scrolling the current document.
+        if url.fragment != nil,
+           let current = webView.url,
+           url.scheme == current.scheme,
+           url.host == current.host,
+           url.path == current.path {
+            decisionHandler(.allow)
+            return
+        }
+        decisionHandler(.cancel)
+        handle(url)
+    }
+
+    /// Links with target="_blank" ask for a new web view instead of navigating.
+    func webView(_ webView: WKWebView,
+                 createWebViewWith configuration: WKWebViewConfiguration,
+                 for navigationAction: WKNavigationAction,
+                 windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if let url = navigationAction.request.url { handle(url) }
+        return nil
+    }
+
+    private func handle(_ url: URL) {
+        if url.isFileURL {
+            let markdownExtensions = ["md", "markdown", "mdown", "mkd"]
+            if markdownExtensions.contains(url.pathExtension.lowercased()),
+               let delegate = NSApp.delegate as? AppDelegate {
+                delegate.application(NSApp, open: [url])
+            } else {
+                NSWorkspace.shared.open(url)
+            }
+            return
+        }
+        ExternalLinkOpener.open(url)
     }
 
     func windowWillClose(_ notification: Notification) {
