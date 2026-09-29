@@ -34,9 +34,9 @@ echo "==> Enregistrement auprès de Launch Services"
 
 if command -v duti >/dev/null 2>&1; then
   echo "==> Définition comme application par défaut pour .md / .markdown"
-  duti -s local.ngoujon.markdownviewer net.daringfireball.markdown viewer || true
-  duti -s local.ngoujon.markdownviewer .md all || true
-  duti -s local.ngoujon.markdownviewer .markdown all || true
+  duti -s local.nicolasgoujon.markdownviewer net.daringfireball.markdown viewer || true
+  duti -s local.nicolasgoujon.markdownviewer .md all || true
+  duti -s local.nicolasgoujon.markdownviewer .markdown all || true
 else
   echo "duti introuvable : impossible de définir automatiquement l'app par défaut."
 fi
