@@ -7,7 +7,7 @@
     <key>CFBundleDisplayName</key>
     <string>Markdown Viewer</string>
     <key>CFBundleIdentifier</key>
-    <string>local.nicolasgoujon.markdownviewer</string>
+    <string>local.ngoujon.markdownviewer</string>
     <key>CFBundleVersion</key>
     <string>1.0</string>
     <key>CFBundleShortVersionString</key>
